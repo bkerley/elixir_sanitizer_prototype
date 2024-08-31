@@ -1,0 +1,16 @@
+# pull in elixir 1.17.2-otp-27
+services:
+  test:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      MIX_ENV: test
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
