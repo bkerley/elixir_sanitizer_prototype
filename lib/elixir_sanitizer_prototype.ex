@@ -2,21 +2,32 @@ defmodule ElixirSanitizerPrototype do
   require Logger
   use GenServer
 
-  @type state :: %__MODULE__{session: :trace.session()}
-  defstruct session: nil
+  @type state :: %__MODULE__{session: :trace.session(),
+                            fire_count: non_neg_integer()}
+  defstruct session: nil, fire_count: 0
 
   # API
 
   def install() do
-    GenServer.start(__MODULE__, :ok)
+    {:ok, _pid} = GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
+
+    :ok
   end
 
   def uninstall() do
     GenServer.stop(__MODULE__)
   end
 
+  def ping() do
+    GenServer.call(__MODULE__, :ping)
+  end
+
   def info() do
     GenServer.call(__MODULE__, :info)
+  end
+
+  def state() do
+    :sys.get_state(__MODULE__)
   end
 
   @default_sanitizer_slug "__sanitizer__"
@@ -35,6 +46,11 @@ defmodule ElixirSanitizerPrototype do
     :trace.function(session, @mfa_to_trace, [], [])
 
     {:ok, %__MODULE__{session: session}}
+  end
+
+  @impl GenServer
+  def handle_call(:ping, _from, state) do
+    {:reply, :pong, state}
   end
 
   @impl GenServer
@@ -62,31 +78,44 @@ defmodule ElixirSanitizerPrototype do
           ]}},
         state
       ) do
-    maybe_alert(stmt, caller, conn)
-    {:noreply, state}
+    maybe_alert(state, stmt, caller, conn)
   end
 
-  defp maybe_alert(stmt, caller, conn) do
-    stmt_bin = IO.iodata_to_binary(stmt)
-
+  def should_alert?(stmt) when is_binary(stmt) do
     cond do
-      not String.valid?(stmt_bin) ->
+      not String.valid?(stmt) ->
         # weird but ok
-        :ok
+        false
 
-      String.contains?(stmt_bin, sanitizer_slug()) ->
-        Logger.emergency(
-          found_injection: stmt_bin,
+      String.contains?(stmt, sanitizer_slug()) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  def should_alert?(stmt) do
+    stmt
+    |> IO.iodata_to_binary()
+    |> should_alert?()
+  end
+
+  defp maybe_alert(state, stmt, caller, conn) do
+    if should_alert?(stmt) do
+      Logger.emergency(
+          found_injection: stmt,
           caller: caller,
-          conn: conn
+          caller_live: Process.alive?(caller),
+          conn: conn,
+          conn_live: Process.alive?(conn)
         )
 
         Process.exit(conn, :kill)
         Process.exit(caller, :kill)
-        :injected
-
-      true ->
-        :ok
+      {:noreply, %__MODULE__{state | fire_count: state.fire_count + 1}}
+    else
+      {:noreply, state}
     end
   end
 end
