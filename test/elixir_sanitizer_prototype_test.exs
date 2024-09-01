@@ -10,24 +10,24 @@ defmodule ElixirSanitizerPrototypeTest do
     assert not ElixirSanitizerPrototype.should_alert?("SELECT * from pg_stat_user_tables")
   end
 
-  # test "installs and uninstalls" do
-  #   {:ok, state} = ElixirSanitizerPrototype.init(:ok)
-  #   assert {:reply, :pong, state} == ElixirSanitizerPrototype.handle_call(:ping, nil, state)
+  test "installs and uninstalls" do
+    {:ok, state} = ElixirSanitizerPrototype.init(:ok)
+    assert {:reply, :pong, state} == ElixirSanitizerPrototype.handle_call(:ping, nil, state)
 
-  #   assert {:reply,
-  #           {:all,
-  #            [
-  #              traced: :global,
-  #              match_spec: [],
-  #              meta: false,
-  #              meta_match_spec: false,
-  #              call_memory: false,
-  #              call_time: false,
-  #              call_count: false
-  #            ]}, state} == ElixirSanitizerPrototype.handle_call(:info, nil, state)
+    assert {:reply,
+            {:all,
+             [
+               traced: :global,
+               match_spec: [],
+               meta: false,
+               meta_match_spec: false,
+               call_memory: false,
+               call_time: false,
+               call_count: false
+             ]}, state} == ElixirSanitizerPrototype.handle_call(:info, nil, state)
 
-  #   assert true == ElixirSanitizerPrototype.terminate(:normal, state)
-  # end
+    assert true == ElixirSanitizerPrototype.terminate(:normal, state)
+  end
 
   test "triggers on injection" do
     {:ok, conn} =
