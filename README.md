@@ -5,7 +5,8 @@ This is the code from my ElixirConf 2024 Lightning Talk,
 It's here so it doesn't get lost in a forgotten
 LiveBook somewhere, but it's not production-ready.
 
-Blog post forthcoming!
+Blog post about this:
+<https://blog.brycekerley.net/2024/09/01/elixir-behavior-sanitizer.html>
 
 ## Huge Caveat
 
